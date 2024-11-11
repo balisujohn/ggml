@@ -2610,7 +2610,7 @@ inline static void ggml_vec_argmax_f32(const int n, int * s, const float * x) {
 // data types
 //
 
-static const char * GGML_OP_NAME[GGML_OP_COUNT] = {
+static const char * GGML_OP_NAME[] = {
     "NONE",
 
     "DUP",
@@ -2663,6 +2663,8 @@ static const char * GGML_OP_NAME[GGML_OP_COUNT] = {
     "CONV_TRANSPOSE_2D",
     "POOL_1D",
     "POOL_2D",
+    "PAD_REFLECT_1D",
+    "UNFOLD_1D",
     "UPSCALE",
     "PAD",
     "ARANGE",
@@ -2696,9 +2698,9 @@ static const char * GGML_OP_NAME[GGML_OP_COUNT] = {
     "CROSS_ENTROPY_LOSS_BACK",
 };
 
-static_assert(GGML_OP_COUNT == 76, "GGML_OP_COUNT != 76");
+static_assert(GGML_OP_COUNT == sizeof(GGML_OP_NAME)/sizeof(char*), "GGML_OP_COUNT != 76");
 
-static const char * GGML_OP_SYMBOL[GGML_OP_COUNT] = {
+static const char * GGML_OP_SYMBOL[] = {
     "none",
 
     "x",
@@ -2787,7 +2789,7 @@ static const char * GGML_OP_SYMBOL[GGML_OP_COUNT] = {
     "cross_entropy_loss_back(x,y)",
 };
 
-static_assert(GGML_OP_COUNT == 76, "GGML_OP_COUNT != 76");
+static_assert(GGML_OP_COUNT == sizeof(GGML_OP_SYMBOL)/sizeof(char*), "GGML_OP_COUNT != 76");
 
 static_assert(GGML_OP_POOL_COUNT == 2, "GGML_OP_POOL_COUNT != 2");
 
@@ -6936,9 +6938,9 @@ struct ggml_tensor * ggml_pad(
 
 struct ggml_tensor * ggml_pad_ext(
     struct ggml_context * ctx,
-    struct ggml_tensor * a, 
+    struct ggml_tensor * a,
     int p00, int p01, int p10, int p11,
-    int p20, int p21, int p30, int p31) 
+    int p20, int p21, int p30, int p31)
     {
     return ggml_pad_impl(ctx, a,p00,p01,p10,p11,p20,p21,p30,p31);
 }
@@ -7386,7 +7388,7 @@ struct ggml_tensor * ggml_pad_reflect_1d(
         is_node = true;
     }
 
-    GGML_ASSERT(p0 < a->ne[0]); // padding length on each size must be less than the 
+    GGML_ASSERT(p0 < a->ne[0]); // padding length on each size must be less than the
     GGML_ASSERT(p1 < a->ne[0]); // existing length of the dimension being padded
 
 
@@ -15620,12 +15622,12 @@ static void ggml_compute_forward_unfold_1d(
         for (int64_t i1 = ith; i1 < ne1; i1 += nth) {
             for (int64_t i0 = 0; i0 < ne0; ++i0) {
                 for (int64_t i3 = 0; i3 < ne3; ++i3) {
-                    const int64_t dst_idx = i3*(ne0*ne1*ne2) + i2*(ne0*ne1) + i1*ne0 + i0;    
-                    
+                    const int64_t dst_idx = i3*(ne0*ne1*ne2) + i2*(ne0*ne1) + i1*ne0 + i0;
+
                     const int64_t src_idx = i3 *(ne00*ne01) + i2 * (ne00) + i1*s + i0;
-                    
+
                     dst_ptr[dst_idx] = src0_ptr[src_idx];
-                    
+
                 }
             }
         }

@@ -1461,8 +1461,58 @@ struct test_pad_reflect_1d : public test_case {
         : type(type), ne_a(ne_a), pad_0(pad_0), pad_1(pad_1)  {}
 
     ggml_tensor * build_graph(ggml_context * ctx) override {
-        ggml_tensor * a = ggml_new_tensor(ctx, type, 2, ne_a.data());
+        ggml_tensor * a = ggml_new_tensor_1d(ctx, type, ne_a[0]);
         ggml_tensor * out = ggml_pad_reflect_1d(ctx, a, pad_0, pad_1);
+        return out;
+    }
+};
+
+// GGML_OP_UNFOLD_1D
+struct test_unfold_1d : public test_case {
+    const ggml_type type;
+    const std::array<int64_t, 2> ne_a;
+    const int k;
+    const int s;
+
+    std::string vars() override {
+        return VARS_TO_STR4(type, ne_a, k, s);
+    }
+
+    test_unfold_1d(ggml_type type = GGML_TYPE_F32,
+            std::array<int64_t, 2> ne_a = {512, 10},
+            int k = 4, int s = 2)
+        : type(type), ne_a(ne_a), k(k), s(s)  {}
+
+    ggml_tensor * build_graph(ggml_context * ctx) override {
+        ggml_tensor * a = ggml_new_tensor(ctx, type, 2, ne_a.data());
+        ggml_tensor * out = ggml_unfold_1d(ctx, a, k, s);
+        return out;
+    }
+};
+
+// GGML_OP_CONV_TRANSPOSE_1D
+struct test_conv_transpose_1d : public test_case {
+    const ggml_type type;
+    const std::array<int64_t, 2> ne_a;
+    const std::array<int64_t, 2> ne_b;
+    const int s0;
+    const int p0;
+    const int d0;
+
+    std::string vars() override {
+        return VARS_TO_STR6(type, ne_a, ne_b, s0, p0, d0);
+    }
+
+    test_conv_transpose_1d(ggml_type type = GGML_TYPE_F32,
+            std::array<int64_t, 2> ne_a = {512, 10},
+            std::array<int64_t, 2> ne_b = {512, 10},
+            int s0 = 10, int p0 = 9, int d0 = 8)
+        : type(type), ne_a(ne_a), ne_b(ne_b), s0(s0), p0(p0), d0(d0) {}
+
+    ggml_tensor * build_graph(ggml_context * ctx) override {
+        ggml_tensor * a = ggml_new_tensor(ctx, type, 2, ne_a.data());
+        ggml_tensor * b = ggml_new_tensor(ctx, type, 2, ne_b.data());
+        ggml_tensor * out = ggml_conv_transpose_1d(ctx, a, b, s0, p0, d0);
         return out;
     }
 };
@@ -2257,6 +2307,8 @@ static bool test_backend(ggml_backend_t backend, test_mode mode, const char * op
     test_cases.emplace_back(new test_acc());
     test_cases.emplace_back(new test_pad());
     test_cases.emplace_back(new test_pad_reflect_1d());
+    test_cases.emplace_back(new test_unfold_1d());
+    test_cases.emplace_back(new test_conv_transpose_1d());
     test_cases.emplace_back(new test_arange());
     test_cases.emplace_back(new test_timestep_embedding());
     test_cases.emplace_back(new test_leaky_relu());

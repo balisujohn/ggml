@@ -41,29 +41,16 @@ struct test_model {
 };
 
 void load_model(test_model & model, bool use_gpu = false) {
-    
-    
-
-
     float data[1024];
     for (int i = 0; i < 1024; ++i) {
         data[i] = (float)i;
     }
 
-
-
- 
     size_t buffer_size = 0;
     {
         buffer_size += 1024* ggml_type_size(GGML_TYPE_F32); // tensor a_0
         buffer_size += 2* ggml_type_size(GGML_TYPE_F32); // tensor a_0
         buffer_size += 10* ggml_type_size(GGML_TYPE_F32); // tensor a_0
-
-
-
-
-
-    
         buffer_size += 1024;
     }
 
@@ -113,8 +100,6 @@ void load_model(test_model & model, bool use_gpu = false) {
     model.a_0 = ggml_new_tensor_1d(model.ctx, GGML_TYPE_F32, 1024);
     model.a_1 = ggml_new_tensor_1d(model.ctx, GGML_TYPE_F32, 2);
     model.a_2 = ggml_new_tensor_1d(model.ctx, GGML_TYPE_F32, 10);
-
-
 
     // create a allocator
     ggml_tallocr alloc = ggml_tallocr_new(model.buffer);
@@ -292,53 +277,38 @@ int main(void)
     float expected_pad_reflect_2[n_pad_reflect_1d_test_2] = {7.0,6.0,5.0,4.0,3.0,2.0,1.0,0.0,1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,8.0,7.0,6.0};
 
 
+    auto compareResults = [](const char* testName, ggml_tensor* tensor,const float *expected, const float *actual, size_t n, double maxError = 0.0, bool shouldPrintArrays = false) {
+        printf("\nPerforming test:\n");
 
-
-
-    printf("\nPerforming test:\n");
-
-    bool passed = true;
-    for(int i = 0; i < n_pad_reflect_1d_test_0; i++) {
-        if(
-            pad_reflect_1d_data_0[i] != expected_pad_reflect_0[i]) {
-            std::cout << "index: " << i << std::endl;
-            std::cout << "expected: " << expected_pad_reflect_0[i] << std::endl;
-            std::cout << "actual: " << pad_reflect_1d_data_0[i] << std::endl;
-            passed = false;
-            break;
+        if (shouldPrintArrays) {
+            std::cout << "Expected: [";
+            for(int i = 0; i < n; i++) {
+                std::cout << expected[i] << ", ";
+            }
+            std::cout << "]\n";
+            std::cout << "Result:   [";
+            for(int i = 0; i < n; i++) {
+                std::cout << actual[i] << ", ";
+            }
+            std::cout << "]\n";
         }
-    }
 
-    printf("ggml_pad_reflect_1d_transpose (%d): %s\n", (int) ggml_nelements(pad_reflect_1d_res_0), passed && (ggml_nelements(pad_reflect_1d_res_0) == n_pad_reflect_1d_test_0) ? "\033[32mPASSED\033[0m" : "\033[31mFAILED\033[0m");
-    
-    passed = true;
-    for(int i = 0; i < n_pad_reflect_1d_test_1; i++) {
-        if(
-            pad_reflect_1d_data_1[i] != expected_pad_reflect_1[i]) {
-            std::cout << "index: " << i << std::endl;
-            std::cout << "expected: " << expected_pad_reflect_1[i] << std::endl;
-            std::cout << "actual: " << pad_reflect_1d_data_1[i] << std::endl;
-            passed = false;
-            break;
+        bool passed = true;
+        for(int i = 0; i < n; i++) {
+            if(fabs(actual[i] - expected[i])/fabs(expected[i]) > maxError){
+                std::cout << "index: " << i << std::endl;
+                std::cout << "expected: " << expected[i] << std::endl;
+                std::cout << "actual: " << actual[i] << std::endl;
+                passed = false;
+                // break;
+            }
         }
-    }
 
-    printf("ggml_pad_reflect_1d_transpose (%d): %s\n", (int) ggml_nelements(pad_reflect_1d_res_1), passed && (ggml_nelements(pad_reflect_1d_res_1) == n_pad_reflect_1d_test_1) ? "\033[32mPASSED\033[0m" : "\033[31mFAILED\033[0m");
-    
-    passed = true;
-    for(int i = 0; i < n_pad_reflect_1d_test_2; i++) {
-        if(
-            pad_reflect_1d_data_2[i] != expected_pad_reflect_2[i]) {
-            std::cout << "index: " << i << std::endl;
-            std::cout << "expected: " << expected_pad_reflect_2[i] << std::endl;
-            std::cout << "actual: " << pad_reflect_1d_data_2[i] << std::endl;
-            passed = false;
-            break;
-        }
-    }
-
-    printf("ggml_pad_reflect_1d_transpose (%d): %s\n", (int) ggml_nelements(pad_reflect_1d_res_2), passed && (ggml_nelements(pad_reflect_1d_res_2) == n_pad_reflect_1d_test_2) ? "\033[32mPASSED\033[0m" : "\033[31mFAILED\033[0m");
-    
+        printf("%s (%d): %s\n", testName, (int) ggml_nelements(tensor), passed && (ggml_nelements(tensor) == n) ? "\033[32mPASSED\033[0m" : "\033[31mFAILED\033[0m");
+    };
+    compareResults("ggml_pad_reflect_1d_0", pad_reflect_1d_res_0, expected_pad_reflect_0, pad_reflect_1d_data_0, n_pad_reflect_1d_test_0);
+    compareResults("ggml_pad_reflect_1d_1", pad_reflect_1d_res_1, expected_pad_reflect_1, pad_reflect_1d_data_1, n_pad_reflect_1d_test_1);
+    compareResults("ggml_pad_reflect_1d_2", pad_reflect_1d_res_2, expected_pad_reflect_2, pad_reflect_1d_data_2, n_pad_reflect_1d_test_2);
 
     ggml_free(model.ctx);
 
